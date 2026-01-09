@@ -241,7 +241,7 @@ class Agent:
                         self.writer.add_scalar(
                             f'train/{key}',
                             value,
-                            self.trainer.train_step
+                            self.trainer._step_count
                         )
             
             # Update progress bar

@@ -174,7 +174,7 @@ class WorldModelTrainer:
         self.grad_clip_norm = train_cfg['grad_clip_norm']
         
         # Training state
-        self.train_step = 0
+        self._step_count = 0
     
     def train_dynamics(self, batch: Dict[str, torch.Tensor]) -> Dict[str, float]:
         """
@@ -414,11 +414,11 @@ class WorldModelTrainer:
         # Train behavior (learn policy) 
         behavior_losses = self.train_behavior(batch)
         
-        self.train_step += 1
+        self._step_count += 1
         
         # Combine losses
         all_losses = {**dynamics_losses, **behavior_losses}
-        all_losses['train_step'] = self.train_step
+        all_losses['train_step'] = self._step_count
         
         return all_losses
 
