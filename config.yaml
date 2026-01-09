@@ -1,0 +1,156 @@
+# Project Physics-AGI Configuration
+
+# System Architecture
+architecture:
+  name: "MBRL-WorldModel"
+  version: "1.0.0"
+
+# Model A: Variational Sensory Encoder
+encoder:
+  type: "cnn"  # Options: "cnn", "vit"
+  input_shape: [3, 64, 64]  # [C, H, W]
+  latent_dim: 32  # Stochastic latent dimension
+  deterministic_dim: 200  # Deterministic hidden state
+  hidden_dims: [32, 64, 128, 256]
+  activation: "relu"
+  use_batch_norm: true
+
+# Model B: Recurrent State Space Model (RSSM)
+rssm:
+  # State dimensions
+  stochastic_size: 32  # Size of z_t
+  deterministic_size: 200  # Size of h_t
+  action_dim: null  # Will be set by environment
+  
+  # Network architecture
+  hidden_size: 200
+  activation: "elu"
+  
+  # Prior/Posterior paths
+  use_kl_balancing: true
+  kl_balance_scale: 0.8
+  free_nats: 3.0  # Minimum KL divergence
+  
+  # Multi-step prediction
+  imagination_horizon: 15  # H steps for dreaming
+
+# Model C: Reward & Value Head
+reward_value:
+  # Reward Model
+  reward_hidden_dims: [400, 400]
+  reward_activation: "elu"
+  reward_layers: 2
+  
+  # Value Model (Critic)
+  value_hidden_dims: [400, 400]
+  value_activation: "elu"
+  value_layers: 3
+  
+  # Discount factor
+  gamma: 0.99
+  lambda_: 0.95  # GAE lambda
+
+# Model D: Actor (Policy Head)
+actor:
+  hidden_dims: [400, 400]
+  activation: "elu"
+  layers: 4
+  
+  # Action distribution
+  action_dist: "tanh_normal"  # Options: "tanh_normal", "discrete"
+  init_std: 5.0
+  min_std: 0.1
+  max_std: 10.0
+
+# Training Configuration
+training:
+  # Experience Replay
+  buffer_size: 1000000
+  sequence_length: 50  # L - trajectory length
+  batch_size: 50
+  
+  # Learning rates
+  model_lr: 0.0006  # World model (Encoder + RSSM + Decoder)
+  actor_lr: 0.00008
+  value_lr: 0.00008
+  
+  # Optimization
+  adam_eps: 0.00001
+  grad_clip_norm: 100.0
+  weight_decay: 0.0
+  
+  # Loss weights
+  reconstruction_weight: 1.0
+  kl_weight: 1.0
+  reward_weight: 1.0
+  
+  # Training schedule
+  prefill_steps: 5000  # Random exploration before training
+  train_every: 5  # Train every N environment steps
+  train_steps: 100  # Gradient updates per training
+  
+  # Checkpointing
+  save_every: 10000
+  eval_every: 5000
+
+# Inference Loop Configuration
+inference:
+  action_repeat: 2  # Repeat action for N frames
+  exploration_noise: 0.3  # Action noise during exploration
+  max_episode_steps: 1000
+  render: false
+
+# Decoder (for reconstruction)
+decoder:
+  type: "cnn_transpose"
+  hidden_dims: [256, 128, 64, 32]
+  output_shape: [3, 64, 64]
+  activation: "relu"
+
+# Environment Configuration
+environment:
+  name: "DMC-walker-walk"  # DeepMind Control Suite
+  action_repeat: 2
+  time_limit: 1000
+  image_size: 64
+  frame_stack: 1
+  
+  # Simulation backend
+  backend: "mujoco"  # Options: "mujoco", "isaac_gym"
+  headless: true
+
+# Infrastructure
+infrastructure:
+  # Compute
+  device: "cuda"  # Options: "cuda", "cpu"
+  num_workers: 4
+  pin_memory: true
+  
+  # Logging
+  log_dir: "./logs"
+  experiment_name: "physics_agi_v1"
+  log_every: 100
+  use_wandb: false
+  wandb_project: "Project-Physics-AGI"
+  
+  # Distributed training
+  distributed: false
+  world_size: 1
+  rank: 0
+
+# Mathematical Constraints
+constraints:
+  # Information Bottleneck
+  enforce_bottleneck: true
+  bottleneck_ratio: 0.1  # latent_dim / input_dim
+  
+  # Multi-step Consistency
+  overshooting_distance: 5  # Predict N steps ahead
+  consistency_weight: 0.8
+  
+  # Meta-learning adaptation
+  adaptation_steps: 10
+  inner_lr: 0.01
+
+# Seed for reproducibility
+seed: 42
