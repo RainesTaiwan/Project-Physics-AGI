@@ -129,14 +129,14 @@ class Agent:
                 # Policy action
                 with torch.no_grad():
                     # Encode observation
-                    obs_tensor = torch.from_numpy(obs).unsqueeze(0).to(self.device)
+                    obs_tensor = torch.from_numpy(obs).float().unsqueeze(0).to(self.device)
                     obs_latent = self.world_model.encode_observation(obs_tensor)
                     
                     # Update state
                     if step == 0:
                         state['z'] = obs_latent
                     else:
-                        action_tensor = torch.from_numpy(prev_action).unsqueeze(0).to(self.device)
+                        action_tensor = torch.from_numpy(prev_action).float().unsqueeze(0).to(self.device)
                         state, _, _ = self.world_model.rssm.observe_step(
                             state, action_tensor, obs_latent
                         )
